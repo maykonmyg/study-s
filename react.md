@@ -45,3 +45,61 @@ git status
 
 # Exibe o histórico dos últimos salvamentos (commits)
 git log --oneline
+
+
+
+-- Criando o banco de dados do desafio
+CREATE DATABASE IF NOT EXISTS desafio_devops;
+USE desafio_devops;
+
+-- Tabela de Servidores
+CREATE TABLE servidores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    ambiente VARCHAR(20) NOT NULL, -- 'producao', 'staging'
+    ip VARCHAR(45) NOT NULL
+);
+
+-- Tabela de Registros de Incidentes/Alertas
+CREATE TABLE alertas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    servidor_id INT NOT NULL,
+    tipo VARCHAR(50) NOT NULL, -- 'CPU', 'MEMORIA', 'DISCO'
+    gravidade VARCHAR(20) NOT NULL, -- 'CRITICO', 'ALERTA', 'INFO'
+    data_alerta DATETIME NOT NULL,
+    FOREIGN KEY (servidor_id) REFERENCES servidores(id)
+);
+
+-- Inserindo dados de teste
+INSERT INTO servidores (nome, ambiente, ip) VALUES
+('Web-Prod-01', 'producao', '10.0.0.1'),
+('DB-Prod-01', 'producao', '10.0.0.2'),
+('Web-Staging-01', 'staging', '10.0.0.3'),
+('Auth-Service', 'producao', '10.0.0.4');
+
+INSERT INTO alertas (servidor_id, tipo, gravidade, data_alerta) VALUES
+(1, 'CPU', 'CRITICO', '2026-09-20 10:30:00'),
+(1, 'MEMORIA', 'ALERTA', '2026-09-20 11:00:00'),
+(2, 'DISCO', 'CRITICO', '2026-09-21 08:15:00'),
+(2, 'CPU', 'CRITICO', '2026-09-21 09:00:00'),
+(2, 'MEMORIA', 'CRITICO', '2026-09-22 14:20:00'),
+(3, 'CPU', 'INFO', '2026-09-22 15:00:00');
+
+SELECT 
+    s.nome,
+    s.ip,
+    COUNT(a.id) AS total_criticos
+FROM servidores s
+INNER JOIN alertas a ON s.id = a.servidor_id
+WHERE s.ambiente = 'producao' 
+  AND a.gravidade = 'CRITICO'
+GROUP BY s.id, s.nome, s.ip
+HAVING COUNT(a.id) >= 2;
+
+SELECT 
+    s.nome,
+    s.ambiente,
+    COUNT(a.id) AS total_alertas
+FROM servidores s
+LEFT JOIN alertas a ON s.id = a.servidor_id
+GROUP BY s.id, s.nome, s.ambiente;
